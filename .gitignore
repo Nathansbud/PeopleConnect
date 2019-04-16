@@ -1,0 +1,7 @@
+.idea/
+people/*.txt
+
+*.iml
+*.class
+
+
