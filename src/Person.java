@@ -4,18 +4,13 @@ public class Person {
     private String name;
 
     private ArrayList<Connection> connections = new ArrayList<>();
-    private String[] connectionList;
+    private ArrayList<String> connectionList;
 
     public Person() {
 
     }
 
-    public Person(String _name, ArrayList<Connection> _connections) {
-        name = _name;
-        connections = _connections;
-    }
-
-    public Person(String _name, String[] _connectionList) {
+    public Person(String _name, ArrayList<String> _connectionList) {
         name = _name;
         connectionList = _connectionList;
     }
@@ -45,10 +40,10 @@ public class Person {
         }
     }
 
-    public void setConnectionList(String[] _connectionList) {
+    public void setConnectionList(ArrayList<String> _connectionList) {
         connectionList = _connectionList;
     }
-    public String[] getConnectionList() {
+    public ArrayList<String> getConnectionList() {
         return connectionList;
     }
 }
