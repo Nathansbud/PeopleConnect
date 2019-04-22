@@ -5,12 +5,33 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.*; //Soon...
+import ddf.minim.*;
+import processing.core.PApplet;
 
-public class PeopleConnect {
+public class PeopleConnect extends PApplet {
     private static ArrayList<Person> people = new ArrayList<>();
     private static File folder = new File("people");
+    private static Minim minim;
+    private static AudioPlayer player;
 
+    public void setup() {
+        minim = new Minim(this);
+        player = minim.loadFile("/Users/zackamiton/Music/iTunes/iTunes Media/Music/Secret Songs/shh#ffb6c1/04 Flamingo.mp3");
+        player.play();
+    }
+
+    public void settings() {
+        fullScreen();
+    }
+
+    public void draw() {
+        background(0);
+        ellipse(mouseX, mouseY, 30, 30);
+    }
+
+    public void keyPressed() {
+        System.out.println("Owo");
+    }
 
     public static void loadPeople() {
         for (File f : folder.listFiles()) {
@@ -106,5 +127,7 @@ public class PeopleConnect {
                 System.out.println("- "+ c.getTo().getName() + " (" + c.getType() + ")");
             }
         }
+
+        PApplet.main("PeopleConnect", args);
     }
 }
