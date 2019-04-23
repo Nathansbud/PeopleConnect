@@ -5,19 +5,28 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import ddf.minim.*;
 import processing.core.PApplet;
 
 public class PeopleConnect extends PApplet {
     private static ArrayList<Person> people = new ArrayList<>();
     private static File folder = new File("people");
-    private static Minim minim;
-    private static AudioPlayer player;
+    private static PeopleConnect ms = new PeopleConnect();
+    private float MAJOR_RADIUS = 380.0f;
+    private float MINOR_RADIUS = 20.0f;
+
+    private boolean showLegend = true;
+    private boolean selectedToCenter = true;
+
+    private Person selected = null;
+
+
 
     public void setup() {
-        minim = new Minim(this);
-        player = minim.loadFile("/Users/zackamiton/Music/iTunes/iTunes Media/Music/Secret Songs/shh#ffb6c1/04 Flamingo.mp3");
-        player.play();
+        for(int i = 0; i < people.size(); i++) {
+            people.get(i).setDimensions((float)(width/2.0f - (MAJOR_RADIUS+MINOR_RADIUS)*Math.cos(i*2*Math.PI/people.size()+Math.PI/2)), (float)(height/2.0f - (MAJOR_RADIUS+MINOR_RADIUS)*Math.sin(i*2*Math.PI/people.size() + Math.PI/2)), MINOR_RADIUS);
+        }
+        Person.setCenterX(width/2.0f);
+        Person.setCenterY(height/2.0f);
     }
 
     public void settings() {
@@ -26,18 +35,82 @@ public class PeopleConnect extends PApplet {
 
     public void draw() {
         background(0);
-        ellipse(mouseX, mouseY, 30, 30);
+
+        if (selected == null) {
+            for (Person p : people) {
+                p.drawConnections();
+            }
+        } else {
+            selected.drawConnections();
+        }
+
+        for (Person p : people) {
+            p.drawNode();
+        }
+
+        for (Person p : people) {
+            if (p.isTouched()) {
+                stroke(0, 0, 255);
+                fill(255);
+                rect(0, 0, 200, 40 + 15 * p.getConnections().size());
+                stroke(0);
+                fill(0);
+                text("Name: " + p.getName(), 10, 15);
+                if (p.getConnections().size() > 0) {
+                    text("Connections: ", 10, 30);
+                    for (int i = 0; i < p.getConnections().size(); i++) {
+                        strokeWeight(2);
+                        stroke(unhex(p.getConnections().get(i).getColor()));
+                        line(15, 40 + 15 * i, 25, 40 + 15 * i);
+                        text(p.getConnections().get(i).getTo().getName(), 30, 45 + 15 * i);
+                    }
+                }
+            }
+        }
+
+        if (showLegend && Connection.Type.values().length > 0) {
+            fill(255);
+            stroke(0, 0, 255);
+            rect(width - 200, 0, 200, 20 + 15 * Connection.Type.values().length);
+            fill(0);
+            for (int i = 0; i < Connection.Type.values().length; i++) {
+                stroke(unhex(Connection.getColor(Connection.Type.values()[i])));
+                line(width - 190, 15 + 15 * i, width - 140, 15 + 15 * i);
+                text(Connection.Type.values()[i].toString(), width - 135, 20 + 15 * i);
+            }
+        }
+        strokeWeight(1);
     }
 
-    public void keyPressed() {
-        System.out.println("Owo");
+    public void mouseClicked() {
+        for(Person p : people) {
+            if(p.isTouched()) {
+                if(p != selected) {
+                    if(selected != null && selectedToCenter) {
+                        selected.setPosition(selected.getStoredX(), selected.getStoredY());
+                    }
+                    selected = p;
+                    p.setSelected(true);
+                    if(selectedToCenter) {
+                        p.setStoredPosition(p.getX(), p.getY());
+                        p.setPosition(Person.centerX, Person.centerY);
+                    }
+                } else {
+                    selected = null;
+                    p.setSelected(false);
+                    if(selectedToCenter) {
+                        p.setPosition(p.getStoredX(), p.getStoredY());
+                    }
+                }
+            }
+        }
     }
 
     public static void loadPeople() {
         for (File f : folder.listFiles()) {
             if (!(f.getName().equals(".DS_Store") || f.getName().equals(".gitkeep"))) {
                 try {
-                    people.add(new Person(f.getName().substring(0, f.getName().lastIndexOf(".")), new ArrayList<>(Files.readAllLines(Paths.get(f.getPath()), StandardCharsets.UTF_8))));
+                    people.add(new Person(ms, f.getName().substring(0, f.getName().lastIndexOf(".")), new ArrayList<String>(Files.readAllLines(Paths.get(f.getPath()), StandardCharsets.UTF_8))));
                 } catch (IOException e) {
                     System.out.println("IOException on connect file read");
                 }
@@ -57,7 +130,7 @@ public class PeopleConnect extends PApplet {
                     if(match.getName().equals(cName)) {
                         exists = true;
                         if(match.getConnectionList().contains(p.getName()+"-"+cType)) {
-                            connectTo = match;
+                            connectTo = match; //check re-writing stuff
                         } else {
                             boolean found = false;
 
@@ -69,8 +142,8 @@ public class PeopleConnect extends PApplet {
                             }
                             if(!found) {
                                 try {
-                                    BufferedWriter writer = new BufferedWriter(new FileWriter(folder + File.separator + cName + ".txt", true));
-                                    writer.write(p.getName() + "-" + cType+"\n");
+                                    PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(folder + File.separator + cName + ".txt", true)));
+                                    writer.write("\n" + p.getName() + "-" + cType);
                                     writer.close();
                                 } catch(IOException e) {
                                     System.out.println("IOException @ write relationship step");
@@ -85,12 +158,12 @@ public class PeopleConnect extends PApplet {
                         File f = new File(folder + File.separator + cName + ".txt");
                         boolean toss = f.createNewFile();
 
-                        BufferedWriter writer = new BufferedWriter(new FileWriter(f));
-                        writer.write(p.getName()+"-"+cType+"\n");
+                        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(f)));
+                        writer.write(p.getName()+"-"+cType);
                         writer.close();
                         List<String> lines = Files.readAllLines(Paths.get(f.getPath()), StandardCharsets.UTF_8);
 
-                        Person np = new Person(cName, new ArrayList<>(lines));
+                        Person np = new Person(ms, cName, new ArrayList<>(lines));
                         people.add(np);
                     }
                     catch(IOException e) {
@@ -114,20 +187,25 @@ public class PeopleConnect extends PApplet {
             for(String s : p.getConnectionList()) {
                 for(Person m : people) {
                     if(s.substring(0, s.lastIndexOf("-")).equals(m.getName())) {
-                        p.addConnection(m, Connection.Type.valueOf(s.substring(s.lastIndexOf("-")+1)));
+                        try {
+                            p.addConnection(m, Connection.Type.valueOf(s.substring(s.lastIndexOf("-")+1)));
+                        } catch(IllegalArgumentException e) {
+                            System.out.println("Non-existent relationship type between " + p.getName() + " and " + m.getName());
+                        }
                         break;
                     }
                 }
             }
         }
 
-        for(Person p : people) {
-            System.out.println(p.getName()+":");
-            for(Connection c : p.getConnections()) {
-                System.out.println("- "+ c.getTo().getName() + " (" + c.getType() + ")");
-            }
-        }
+//        for(Person p : people) {
+//            System.out.println(p.getName()+":");
+//            for(Connection c : p.getConnections()) {
+//                System.out.println("- "+ c.getTo().getName() + " (" + c.getType() + ")");
+//            }
+//        }
 
-        PApplet.main("PeopleConnect", args);
+        String[] processingArgs = {"PeopleConnect"};
+        PApplet.runSketch(processingArgs, ms);
     }
 }

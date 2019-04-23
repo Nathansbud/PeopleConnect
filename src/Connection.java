@@ -1,10 +1,11 @@
 public class Connection {
     public enum Type {
         Friend(0),
-        Romance(1),
-        Family(2),
-        Acquaintance(3)
-
+        Relationship(1),
+        Ex(2),
+        Family(3),
+        Acquaintance(4),
+        Enemy(5)
         ;
 
         //Methods
@@ -24,9 +25,7 @@ public class Connection {
     public Connection(Person _from, Person _to, Type _type) {
         from = _from;
         to = _to;
-
         type = _type;
-
     }
 
     public Person getTo() {
@@ -53,5 +52,28 @@ public class Connection {
     @Override
     public String toString() {
         return to.getName() + " - " + type.toString();
+    }
+
+    public String getColor() {
+        return getColor(type);
+    }
+
+    static String getColor(Type t) {
+        switch(t) {
+            case Family:
+                return "ff0000ff";
+            case Relationship:
+                return "ffff0000";
+            case Ex:
+                return "ff00ffff";
+            case Friend:
+                return "ff00ff00";
+            case Acquaintance:
+                return "ff969696";
+            case Enemy:
+                return "ffd2691e";
+            default:
+                return "ffffffff";
+        }
     }
 }
