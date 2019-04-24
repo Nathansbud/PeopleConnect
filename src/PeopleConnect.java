@@ -11,20 +11,22 @@ public class PeopleConnect extends PApplet {
     private static ArrayList<Person> people = new ArrayList<>();
     private static File folder = new File("people");
     private static PeopleConnect ms = new PeopleConnect();
-    private float MAJOR_RADIUS = 380.0f;
-    private float MINOR_RADIUS = 20.0f;
+    private float MAJOR_RADIUS;
+    private float MINOR_RADIUS;
 
     private boolean showLegend = true;
     private boolean selectedToCenter = true;
 
     private Person selected = null;
 
-
-
     public void setup() {
+        MAJOR_RADIUS = width/3.8f;
+        MINOR_RADIUS = width/72.0f;
+
         for(int i = 0; i < people.size(); i++) {
             people.get(i).setDimensions((float)(width/2.0f - (MAJOR_RADIUS+MINOR_RADIUS)*Math.cos(i*2*Math.PI/people.size()+Math.PI/2)), (float)(height/2.0f - (MAJOR_RADIUS+MINOR_RADIUS)*Math.sin(i*2*Math.PI/people.size() + Math.PI/2)), MINOR_RADIUS);
         }
+
         Person.setCenterX(width/2.0f);
         Person.setCenterY(height/2.0f);
     }
@@ -48,6 +50,7 @@ public class PeopleConnect extends PApplet {
             p.drawNode();
         }
 
+        strokeWeight(2);
         for (Person p : people) {
             if (p.isTouched()) {
                 stroke(0, 0, 255);
@@ -55,14 +58,13 @@ public class PeopleConnect extends PApplet {
                 rect(0, 0, 200, 40 + 15 * p.getConnections().size());
                 stroke(0);
                 fill(0);
-                text("Name: " + p.getName(), 10, 15);
+                text("Name: " + p.getName(), width/144.0f, height/60.0f);
                 if (p.getConnections().size() > 0) {
-                    text("Connections: ", 10, 30);
+                    text("Connections: ", width/144.0f, height/60.0f*2);
                     for (int i = 0; i < p.getConnections().size(); i++) {
-                        strokeWeight(2);
                         stroke(unhex(p.getConnections().get(i).getColor()));
-                        line(15, 40 + 15 * i, 25, 40 + 15 * i);
-                        text(p.getConnections().get(i).getTo().getName(), 30, 45 + 15 * i);
+                        line(width/96.0f, height/22.5f + height/60.0f * i, width/57.6f, height/22.5f + height/60.0f * i);
+                        text(p.getConnections().get(i).getTo().getName(), 2*width/96.0f, height/20.0f + height/60.0f * i);
                     }
                 }
             }
@@ -71,12 +73,12 @@ public class PeopleConnect extends PApplet {
         if (showLegend && Connection.Type.values().length > 0) {
             fill(255);
             stroke(0, 0, 255);
-            rect(width - 200, 0, 200, 20 + 15 * Connection.Type.values().length);
+            rect(width - width/7.2f, 0, width/7.2f, height/45.0f + height/60.0f * Connection.Type.values().length);
             fill(0);
             for (int i = 0; i < Connection.Type.values().length; i++) {
                 stroke(unhex(Connection.getColor(Connection.Type.values()[i])));
-                line(width - 190, 15 + 15 * i, width - 140, 15 + 15 * i);
-                text(Connection.Type.values()[i].toString(), width - 135, 20 + 15 * i);
+                line(width - width/144.0f*19, height/60.0f + height/60.0f * i, width - width/144.0f*14, height/60.0f + height/60.0f * i);
+                text(Connection.Type.values()[i].toString(), width - width/10.7f, height/45.0f + height/60.0f * i);
             }
         }
         strokeWeight(1);
@@ -197,13 +199,6 @@ public class PeopleConnect extends PApplet {
                 }
             }
         }
-
-//        for(Person p : people) {
-//            System.out.println(p.getName()+":");
-//            for(Connection c : p.getConnections()) {
-//                System.out.println("- "+ c.getTo().getName() + " (" + c.getType() + ")");
-//            }
-//        }
 
         String[] processingArgs = {"PeopleConnect"};
         PApplet.runSketch(processingArgs, ms);

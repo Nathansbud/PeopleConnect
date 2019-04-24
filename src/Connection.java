@@ -4,9 +4,7 @@ public class Connection {
         Relationship(1),
         Ex(2),
         Family(3),
-        Acquaintance(4),
-        Enemy(5)
-        ;
+        Acquaintance(4),;
 
         //Methods
         Type(int _value) {
@@ -70,8 +68,6 @@ public class Connection {
                 return "ff00ff00";
             case Acquaintance:
                 return "ff969696";
-            case Enemy:
-                return "ffd2691e";
             default:
                 return "ffffffff";
         }

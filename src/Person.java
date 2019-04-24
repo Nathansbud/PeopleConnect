@@ -117,7 +117,7 @@ public class Person extends PApplet {
         sketch.ellipse(x, y, r, r);
         sketch.fill(0);
         sketch.textSize(8);
-        sketch.text(String.valueOf(name.charAt(0)) + String.valueOf(name.charAt(name.lastIndexOf(" ")+1)), x - 5, y);
+        sketch.text(String.valueOf(name.charAt(0)) + String.valueOf(name.charAt(name.lastIndexOf(" ")+1)), x - r/4, y);
         sketch.textSize(12);
     }
 
