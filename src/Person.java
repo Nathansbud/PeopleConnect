@@ -45,8 +45,8 @@ public class Person extends PApplet {
         return connections;
     }
 
-    public void addConnection(Person p, Connection.Type t) {
-        connections.add(new Connection(this, p, t));
+    public void addConnection(Person p, Connection.Type t, boolean s) {
+        connections.add(new Connection(this, p, t, s));
     }
     public void changeConnectionType(Person p, Connection.Type t) {
         for(Connection c : connections) {
