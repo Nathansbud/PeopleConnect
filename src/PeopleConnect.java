@@ -11,13 +11,14 @@ public class PeopleConnect extends PApplet {
     private static ArrayList<Person> people = new ArrayList<>();
     private static File folder = new File("people");
     private static PeopleConnect ms = new PeopleConnect();
-    private float MAJOR_RADIUS;
-    private float MINOR_RADIUS;
+    private static float MAJOR_RADIUS;
+    private static float MINOR_RADIUS;
 
-    private boolean showLegend = true;
-    private boolean selectedToCenter = true;
+    private static boolean showLegend = true;
+    private static boolean selectedToCenter = true;
 
-    private Person selected = null;
+    private static Person selected = null;
+    private static Button connectionButtons[] = new Button[2];
 
     public void setup() {
         MAJOR_RADIUS = width/3.8f;
@@ -29,6 +30,9 @@ public class PeopleConnect extends PApplet {
 
         Person.setCenterX(width/2.0f);
         Person.setCenterY(height/2.0f);
+
+        connectionButtons[0] = new Button(ms, "2-Way Connect", width - width/14.4f, height - 2*height/30.0f, width/36.0f, height/45.0f, 6);
+        connectionButtons[1] = new Button(ms, "1-Way Connect", width - width/14.4f, height - height/30.0f, width/36.0f, height/45.0f, 6);
     }
 
     public void settings() {
@@ -48,6 +52,10 @@ public class PeopleConnect extends PApplet {
 
         for (Person p : people) {
             p.drawNode();
+        }
+
+        for(Button b : connectionButtons) {
+            b.draw();
         }
 
         strokeWeight(2);
@@ -85,6 +93,10 @@ public class PeopleConnect extends PApplet {
     }
 
     public void mouseClicked() {
+        checkSelected();
+    }
+
+    public static void checkSelected() {
         for(Person p : people) {
             if(p.isTouched()) {
                 if(p != selected) {
@@ -106,7 +118,19 @@ public class PeopleConnect extends PApplet {
                 }
             }
         }
+        
+        for(Button b : connectionButtons) {
+            if(b.isTouched()) {
+                for(Button de : connectionButtons) {
+                    if(!de.equals(b)) {
+                        de.setSelected(false);
+                    }
+                }
+                b.setSelected(!b.isSelected());
+            }
+        }
     }
+
 
     public static void loadPeople() {
         for (File f : folder.listFiles()) {
@@ -119,13 +143,12 @@ public class PeopleConnect extends PApplet {
             }
         }
 
-        for(int n = 0; n < people.size(); n++) { //for instead of foreach due to modification of people
+        for(int n = 0; n < people.size(); n++) {
             Person p = people.get(n);
             for(String s : p.getConnectionList()) {
                 String cName = s.substring(0, s.indexOf("-"));
                 String cShared = s.substring(s.indexOf("-") + 1, s.lastIndexOf("-"));
                 String cType = s.substring(s.lastIndexOf("-") + 1);
-//                Person connectTo = new Person();
                 boolean exists = false;
 
                 for (Person match : people) {
@@ -180,7 +203,7 @@ public class PeopleConnect extends PApplet {
         loadPeople();
         for(Person p : people) {
             for(String s : p.getConnectionList()) {
-                for(Person m : people) {
+                for(Person m : people) { //double loop (horrible, horrible) for object refs
                     if(s.substring(0, s.indexOf("-")).equals(m.getName())) {
                         try {
                             p.addConnection(m, Connection.Type.valueOf(s.substring(s.lastIndexOf("-")+1)), (s.charAt(s.indexOf("-")+1) == 1));
