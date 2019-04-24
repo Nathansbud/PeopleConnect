@@ -8,6 +8,7 @@ import java.util.List;
 import processing.core.PApplet;
 
 public class PeopleConnect extends PApplet {
+    //!
     private static ArrayList<Person> people = new ArrayList<>();
     private static File folder = new File("people");
     private static PeopleConnect ms = new PeopleConnect();
