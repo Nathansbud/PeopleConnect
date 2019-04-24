@@ -117,58 +117,51 @@ public class PeopleConnect extends PApplet {
                     System.out.println("IOException on connect file read");
                 }
             }
-        } //Should load in every "existing" person
+        }
 
         for(int n = 0; n < people.size(); n++) { //for instead of foreach due to modification of people
             Person p = people.get(n);
             for(String s : p.getConnectionList()) {
-                String cType = s.substring(s.lastIndexOf("-")+1);
-                String cName = s.substring(0, s.lastIndexOf("-"));
-                Person connectTo = new Person();
-
+                String cName = s.substring(0, s.indexOf("-"));
+                String cShared = s.substring(s.indexOf("-") + 1, s.lastIndexOf("-"));
+                String cType = s.substring(s.lastIndexOf("-") + 1);
+//                Person connectTo = new Person();
                 boolean exists = false;
 
-                for(Person match : people) {
-                    if(match.getName().equals(cName)) {
+                for (Person match : people) {
+                    if (match.getName().equals(cName)) {
                         exists = true;
-                        if(match.getConnectionList().contains(p.getName()+"-"+cType)) {
-                            connectTo = match; //check re-writing stuff
-                        } else {
-                            boolean found = false;
-
-                            for(String matchType : match.getConnectionList()) {
-                                if(matchType.substring(0, matchType.lastIndexOf("-")).equals(p.getName())) {
-                                    found = true;
-                                    System.out.println("Not sure how to handle this yet");
-                                }
-                            }
-                            if(!found) {
+                        if (cShared.equals("1")) {
+                            if (match.getConnectionList().contains(p.getName() + "-" + cShared + "-" + cType)) {
+                                break;
+                            } else {
                                 try {
                                     PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(folder + File.separator + cName + ".txt", true)));
-                                    writer.write("\n" + p.getName() + "-" + cType);
+                                    writer.write(p.getName() + "-" + cShared + "-" + cType);
                                     writer.close();
-                                } catch(IOException e) {
+                                } catch (IOException e) {
                                     System.out.println("IOException @ write relationship step");
                                 }
                             }
+                        } else {
+                            break;
                         }
                     }
                 }
-
-                if(!exists) {
+                if (!exists) {
                     try {
                         File f = new File(folder + File.separator + cName + ".txt");
                         boolean toss = f.createNewFile();
 
                         PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(f)));
-                        writer.write(p.getName()+"-"+cType);
+                        if (cShared.equals("1")) {
+                            writer.write(p.getName() + "-" + cShared + "-" + cType);
+                        }
                         writer.close();
                         List<String> lines = Files.readAllLines(Paths.get(f.getPath()), StandardCharsets.UTF_8);
-
                         Person np = new Person(ms, cName, new ArrayList<>(lines));
                         people.add(np);
-                    }
-                    catch(IOException e) {
+                    } catch (IOException e) {
                         System.out.println("Creating File exception");
                     }
                 }
@@ -188,9 +181,10 @@ public class PeopleConnect extends PApplet {
         for(Person p : people) {
             for(String s : p.getConnectionList()) {
                 for(Person m : people) {
-                    if(s.substring(0, s.lastIndexOf("-")).equals(m.getName())) {
+                    if(s.substring(0, s.indexOf("-")).equals(m.getName())) {
                         try {
-                            p.addConnection(m, Connection.Type.valueOf(s.substring(s.lastIndexOf("-")+1)));
+                            p.addConnection(m, Connection.Type.valueOf(s.substring(s.lastIndexOf("-")+1)), (s.charAt(s.indexOf("-")+1) == 1));
+                            break;
                         } catch(IllegalArgumentException e) {
                             System.out.println("Non-existent relationship type between " + p.getName() + " and " + m.getName());
                         }
