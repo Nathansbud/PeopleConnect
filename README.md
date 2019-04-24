@@ -1,4 +1,4 @@
-# People Connect
+# PeopleConnect
 
 A way to visualize people...and their connections!
 
