@@ -112,7 +112,12 @@ public class Person extends PApplet {
     }
 
     public void drawNode() {
-        sketch.stroke(0);
+        sketch.strokeWeight(1);
+        if(isSelected()) {
+            sketch.stroke(255, 255, 0);
+        } else {
+            sketch.stroke(0);
+        }
         sketch.fill(255);
         sketch.ellipse(x, y, r, r);
         sketch.fill(0);

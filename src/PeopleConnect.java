@@ -1,4 +1,5 @@
 import java.io.*;
+import java.nio.Buffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -8,24 +9,30 @@ import java.util.List;
 import processing.core.PApplet;
 
 public class PeopleConnect extends PApplet {
-    //!
     private static ArrayList<Person> people = new ArrayList<>();
     private static File folder = new File("people");
-    private static PeopleConnect ms = new PeopleConnect();
-    private static float MAJOR_RADIUS;
-    private static float MINOR_RADIUS;
+    private static PeopleConnect ms = new PeopleConnect(); //Used for PApplet to work
+    private static float MAJOR_RADIUS; //"Inner circle" that nodes are centered around
+    private static float MINOR_RADIUS; //Node radius
 
-    private static boolean showLegend = true;
-    private static boolean selectedToCenter = true;
+    private static boolean showLegend = true; //Top right "legend" box boolean
+    private static boolean selectedToCenter = true; //Should nodes move to center on selection?
 
-    private static Person selected = null;
-    private static Button connectionButtons[] = new Button[2];
+    private static Person selected = null; //Used for selection or new relationship creating
+    private static Person linkTo = null; //Used for new relationship creating
+
+    private static Button connectionButtons[] = new Button[2]; //Buttons for creating connections
+
+    private static Button selectedButton = null; //Loads in button on click
+    private static boolean selectState = false; //Boolean for connection-making mode
+    private static String title = "PeopleConnect"; //Text centered at the top
 
     public void setup() {
         MAJOR_RADIUS = width/3.8f;
         MINOR_RADIUS = width/72.0f;
 
         for(int i = 0; i < people.size(); i++) {
+            //Basic trig, all nodes have angle given by π/2 + 2π/NodeCount, to start centered vertically and rotate around "major" inner circle
             people.get(i).setDimensions((float)(width/2.0f - (MAJOR_RADIUS+MINOR_RADIUS)*Math.cos(i*2*Math.PI/people.size()+Math.PI/2)), (float)(height/2.0f - (MAJOR_RADIUS+MINOR_RADIUS)*Math.sin(i*2*Math.PI/people.size() + Math.PI/2)), MINOR_RADIUS);
         }
 
@@ -42,13 +49,27 @@ public class PeopleConnect extends PApplet {
 
     public void draw() {
         background(0);
+        fill(255);
+        textSize(16);
+        text(title, width/2.0f - 0.5f*textWidth(title), height/30.0f); //Title shows current program state
 
         if (selected == null) {
             for (Person p : people) {
                 p.drawConnections();
             }
         } else {
-            selected.drawConnections();
+            selected.drawConnections(); //Only show chosen connections
+        }
+
+
+        if(selectState) {
+            if(selected != null && linkTo == null) {
+                stroke(255);
+                line(selected.getX(), selected.getY(), mouseX, mouseY); //Draw linking line
+            } else if(selected != null && linkTo != null) {
+                stroke(255);
+                line(selected.getX(), selected.getY(), linkTo.getX(), linkTo.getY());
+            }
         }
 
         for (Person p : people) {
@@ -98,8 +119,26 @@ public class PeopleConnect extends PApplet {
     }
 
     public static void checkSelected() {
+        for(Button b : connectionButtons) {
+            if(b.isTouched()) {
+                for(Button de : connectionButtons) {
+                    if(!de.equals(b)) {
+                        de.setSelected(false);
+                    }
+                }
+                b.setSelected(!b.isSelected());
+                selectState = b.isSelected();
+                if(selected != null) {
+                    selected.setPosition(selected.getStoredX(), selected.getStoredY());
+                    selected = null;
+                }
+                selectedButton = b;
+                title = b.getText();
+            }
+        }
+
         for(Person p : people) {
-            if(p.isTouched()) {
+            if(p.isTouched() && !selectState) {
                 if(p != selected) {
                     if(selected != null && selectedToCenter) {
                         selected.setPosition(selected.getStoredX(), selected.getStoredY());
@@ -110,26 +149,70 @@ public class PeopleConnect extends PApplet {
                         p.setStoredPosition(p.getX(), p.getY());
                         p.setPosition(Person.centerX, Person.centerY);
                     }
+                    title = "Selected: " + selected.getName();
                 } else {
                     selected = null;
                     p.setSelected(false);
                     if(selectedToCenter) {
                         p.setPosition(p.getStoredX(), p.getStoredY());
                     }
+                    title = "PeopleConnect";
                 }
-            }
-        }
-        
-        for(Button b : connectionButtons) {
-            if(b.isTouched()) {
-                for(Button de : connectionButtons) {
-                    if(!de.equals(b)) {
-                        de.setSelected(false);
+            } else if(p.isTouched() && selectState) { //Handle Connection button
+                if(selected == null) {
+                    selected = p;
+                    selected.setSelected(true);
+                    title = selectedButton.getText() + " - From: " + selected.getName();
+                } else if(selected != null && selected != p) {
+                    linkTo = p;
+                    linkTo.setSelected(true);
+                    title = selectedButton.getText() + " - From: " + selected.getName() + " - To: " + linkTo.getName();
+
+                    selected.addConnection(linkTo, Connection.Type.Friend, true);
+                    if(selectedButton.equals(connectionButtons[0])) {
+                        linkTo.addConnection(selected, Connection.Type.Friend, true);
+                        try {
+                            PrintWriter f = new PrintWriter(new BufferedWriter(new FileWriter(folder + File.separator + selected.getName() + ".txt", true)));
+                            f.println(linkTo.getName() + "-1-Friend");
+                            f.close();
+                            f = new PrintWriter(new BufferedWriter(new FileWriter(folder + File.separator + linkTo.getName() + ".txt", true)));
+                            f.println(selected.getName() + "-1-Friend");
+                            f.close();
+                        } catch(IOException e) {
+                            System.out.println("FileWrite failed on 2-way connect add!");
+                        }
+                    } else if(selectedButton.equals(connectionButtons[1])) {
+                        try {
+                           PrintWriter f = new PrintWriter(new BufferedWriter(new FileWriter(folder + File.separator + selected.getName() + ".txt", true)));
+                           f.println(linkTo.getName() + "-0-Friend");
+                           f.close();
+                       } catch(IOException e) {
+                           System.out.println("FileWriter failed on 1-way connect add!");
+                       }
                     }
+                    selected.setSelected(false);
+                    linkTo.setSelected(false);
+
+                    selected = null;
+                    linkTo = null;
+                    selectedButton = null;
+
+                    selectState = false;
+                    for(Button b : connectionButtons) {
+                        b.setSelected(false);
+                    }
+                    title = "PeopleConnect";
+                } else if(selected == p) {
+                    selected.setSelected(false);
+                    selected = null;
+                    title = selectedButton.getText();
+                } else if(linkTo == p) {
+                    linkTo.setSelected(false);
+                    linkTo = null;
                 }
-                b.setSelected(!b.isSelected());
             }
         }
+
     }
 
 
@@ -147,46 +230,48 @@ public class PeopleConnect extends PApplet {
         for(int n = 0; n < people.size(); n++) {
             Person p = people.get(n);
             for(String s : p.getConnectionList()) {
-                String cName = s.substring(0, s.indexOf("-"));
-                String cShared = s.substring(s.indexOf("-") + 1, s.lastIndexOf("-"));
-                String cType = s.substring(s.lastIndexOf("-") + 1);
-                boolean exists = false;
+                if (s.length() > 0) {
+                    String cName = s.substring(0, s.indexOf("-"));
+                    String cShared = s.substring(s.indexOf("-") + 1, s.lastIndexOf("-"));
+                    String cType = s.substring(s.lastIndexOf("-") + 1);
+                    boolean exists = false;
 
-                for (Person match : people) {
-                    if (match.getName().equals(cName)) {
-                        exists = true;
-                        if (cShared.equals("1")) {
-                            if (match.getConnectionList().contains(p.getName() + "-" + cShared + "-" + cType)) {
-                                break;
-                            } else {
-                                try {
-                                    PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(folder + File.separator + cName + ".txt", true)));
-                                    writer.write(p.getName() + "-" + cShared + "-" + cType);
-                                    writer.close();
-                                } catch (IOException e) {
-                                    System.out.println("IOException @ write relationship step");
+                    for (Person match : people) {
+                        if (match.getName().equals(cName)) {
+                            exists = true;
+                            if (cShared.equals("1")) {
+                                if (match.getConnectionList().contains(p.getName() + "-" + cShared + "-" + cType)) {
+                                    break;
+                                } else {
+                                    try {
+                                        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(folder + File.separator + cName + ".txt", true)));
+                                        writer.println(p.getName() + "-" + cShared + "-" + cType);
+                                        writer.close();
+                                    } catch (IOException e) {
+                                        System.out.println("IOException @ write relationship step");
+                                    }
                                 }
+                            } else {
+                                break;
                             }
-                        } else {
-                            break;
                         }
                     }
-                }
-                if (!exists) {
-                    try {
-                        File f = new File(folder + File.separator + cName + ".txt");
-                        boolean toss = f.createNewFile();
+                    if (!exists) {
+                        try {
+                            File f = new File(folder + File.separator + cName + ".txt");
+                            boolean toss = f.createNewFile();
 
-                        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(f)));
-                        if (cShared.equals("1")) {
-                            writer.write(p.getName() + "-" + cShared + "-" + cType);
+                            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(f, true)));
+                            if (cShared.equals("1")) {
+                                writer.println(p.getName() + "-" + cShared + "-" + cType);
+                            }
+                            writer.close();
+                            List<String> lines = Files.readAllLines(Paths.get(f.getPath()), StandardCharsets.UTF_8);
+                            Person np = new Person(ms, cName, new ArrayList<>(lines));
+                            people.add(np);
+                        } catch (IOException e) {
+                            System.out.println("Creating File exception");
                         }
-                        writer.close();
-                        List<String> lines = Files.readAllLines(Paths.get(f.getPath()), StandardCharsets.UTF_8);
-                        Person np = new Person(ms, cName, new ArrayList<>(lines));
-                        people.add(np);
-                    } catch (IOException e) {
-                        System.out.println("Creating File exception");
                     }
                 }
             }
@@ -204,15 +289,17 @@ public class PeopleConnect extends PApplet {
         loadPeople();
         for(Person p : people) {
             for(String s : p.getConnectionList()) {
-                for(Person m : people) { //double loop (horrible, horrible) for object refs
-                    if(s.substring(0, s.indexOf("-")).equals(m.getName())) {
-                        try {
-                            p.addConnection(m, Connection.Type.valueOf(s.substring(s.lastIndexOf("-")+1)), (s.charAt(s.indexOf("-")+1) == 1));
+                if(s.length() > 0) {
+                    for (Person m : people) { //double loop (horrible, horrible) for object refs
+                        if (s.substring(0, s.indexOf("-")).equals(m.getName())) {
+                            try {
+                                p.addConnection(m, Connection.Type.valueOf(s.substring(s.lastIndexOf("-") + 1)), (s.charAt(s.indexOf("-") + 1) == 1));
+                                break;
+                            } catch (IllegalArgumentException e) {
+                                System.out.println("Non-existent relationship type between " + p.getName() + " and " + m.getName());
+                            }
                             break;
-                        } catch(IllegalArgumentException e) {
-                            System.out.println("Non-existent relationship type between " + p.getName() + " and " + m.getName());
                         }
-                        break;
                     }
                 }
             }
